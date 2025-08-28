@@ -24,12 +24,11 @@ spring:
 
 logging:
   level:
-    org:
-      hibernate:
-        SQL: debug
-        type:
-          descriptor:
-            sql: trace
+    root: info               # 전체 기본 로그 레벨
+    org.springframework: debug   # 스프링 내부 로그를 보고 싶으면 debug
+    org.hibernate.SQL: warn     # SQL 로그
+    org.hibernate.type.descriptor.sql: trace   # 바인딩된 파라미터 값까지
+
 
 jwt:
   secret: "change-this-to-a-very-long-random-secret-at-least-256-bits"
