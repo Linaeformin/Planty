@@ -7,7 +7,7 @@ labels: ["enhancement"]
 
 ## 💡Description
 
-> 프로필 수정
+> 
 
 ---
 
