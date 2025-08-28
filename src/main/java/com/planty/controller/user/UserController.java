@@ -68,7 +68,7 @@ public class UserController {
         body.put("message", "로그인 성공");
         body.put("accessToken", accessToken);
 
-        // JSON 응답 생성
+        // JSON 응답 생성 (accessToken 발급)
         return ResponseEntity.ok()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .body(body);
