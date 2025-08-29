@@ -47,14 +47,33 @@ parameter-store:
 ai:
   openai:
     api-key: ${OPENAI_API_KEY}
+    url: ${OPENAI_API_URL:https://api.openai.com/v1/responses}
     timeout: 60
-    maxRetries: 3
-    enableLogging: false
-  crop-registration:
+    max-retries: 3
+
+  # 기능별 프리셋
+  plant-analysis:
     model: gpt-4o-mini
     max-tokens: 1000
     temperature: 0.1
+
   crop-diagnosis:
     model: gpt-4o
     max-tokens: 1500
     temperature: 0.2
+
+  diary-integrated:
+    model: gpt-4o-mini
+    max-tokens: 1200
+    temperature: 0.2
+
+  diary-disease:
+    model: gpt-4o
+    max-tokens: 1400
+    temperature: 0.2
+
+  diary-market:
+    model: gpt-4o-mini
+    max-tokens: 1200
+    temperature: 0.3
+

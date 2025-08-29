@@ -125,14 +125,9 @@ public class GlobalExceptionHandler {
     }
 
     // 그 외 예기치 못한 에러
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleEtc(Exception ex) {
-        return ApiError.of(500, "INTERNAL_ERROR", "서버 에러가 발생했습니다.");
-    }
-
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    public ResponseEntity<?> handleRuntimeException(RuntimeException ex) {
+        return ApiError.of(400, "RUNTIME_ERROR", ex.getMessage());
     }
 }
 
