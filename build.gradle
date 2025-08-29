@@ -75,7 +75,6 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     // 스프링 시큐리티
     implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
     // 빈 유효성 검증
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
@@ -104,6 +103,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     // 웹클라이언트
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // macOS용 Netty 네이티브 DNS 리졸버 (ARM: osx-aarch_64)
+    runtimeOnly("io.netty:netty-resolver-dns-native-macos") {
+        artifact { classifier = "osx-aarch_64" }
+    }
 }
 
 def querydslDir = "$buildDir/generated/sources/annotaionProcessor/java"

@@ -1,265 +1,170 @@
 package com.planty.service.crop;
 
-import com.planty.dto.crop.CropRegistrationDto;
-import com.planty.entity.crop.AnalysisStatus;
-import com.planty.entity.crop.Crop;
-import com.planty.entity.user.User;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.planty.common.prompt.OpenAiService;
+import com.planty.common.prompt.PromptKey;
+import com.planty.dto.crop.CropAnalysisDto;
+import com.planty.dto.crop.CropAnalysisResDto;
 import com.planty.repository.crop.CropRepository;
+import com.planty.storage.StorageService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
-@Slf4j
+// 작물 서비스
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class CropService {
 
     private final CropRepository cropRepository;
-    private final CropRegistrationAnalysisService registrationAnalysisService;
-    private final CropDiagnosisAnalysisService diagnosisAnalysisService;
-    /**
-     * 작물 기본 정보로 임시 등록 (이미지 업로드 전)
-     */
-    public Crop createTempCrop(User user, CropRegistrationDto dto) {
-        Crop crop = new Crop();
-        crop.setUser(user);
-        crop.setName(dto.getName());
-        crop.setStartAt(dto.getStartAt());
-        crop.setEndAt(dto.getEndAt());
-        crop.setAnalysisStatus(AnalysisStatus.PENDING);
-        crop.setIsRegistered(false);
-        crop.setHarvest(false);
+    private final StorageService storageService;
+    private final OpenAiService openAiService;
+    private final ObjectMapper objectMapper;
 
-        return cropRepository.save(crop);
-    }
+    // 이미지와 작물 이름을 받아서 OpenAI API로 분석 요청 후 결과를 DTO로 변환하는 메소드
+    public CropAnalysisResDto analyze(CropAnalysisDto formDto) {
+        // 1) 이미지 파일 검증
+        if (formDto.getImageFile() == null || formDto.getImageFile().isEmpty()) {
+            throw new IllegalArgumentException("이미지를 삽입해주세요.");
+        }
 
-    /**
-     * 임시 등록된 작물에 이미지 업로드 및 AI 분석 시작
-     */
-    public Crop uploadCropImageToExisting(Integer cropId, MultipartFile imageFile) throws IOException {
-        // 1. 기존 작물 조회
-        Crop crop = cropRepository.findById(cropId)
-                .orElseThrow(() -> new IllegalArgumentException("작물을 찾을 수 없습니다."));
+        // 2) cropName 변수를 Map 형태로 준비
+        var vars = java.util.Map.of(
+                "cropName", formDto.getCropName() == null ? "" : formDto.getCropName()
+        );
 
-        // 2. 이미지 파일 저장 및 분석 시작 (재배방법 분석 서비스 사용)
-        String savedImagePath = registrationAnalysisService.saveImageFile(imageFile);
-        crop.setCropImg(savedImagePath);
-        crop.setAnalysisStatus(AnalysisStatus.ANALYZING);
+        // 3) OpenAI API 호출 (프롬프트 키, 변수, 이미지 파일 전달)
+        String raw = openAiService.callOpenAi(
+                PromptKey.PLANT_ANALYSIS,
+                vars,
+                formDto.getImageFile()
+        );
 
-        Crop savedCrop = cropRepository.save(crop);
-
-        // 3. 비동기로 재배방법 분석 시작
-        registrationAnalysisService.analyzeImageAsync(savedCrop.getId(), savedImagePath);
-
-        return savedCrop;
-    }
-
-    /**
-     * 작물 이미지 업로드 및 분석 시작 (기존 방식 - 호환성 유지)
-     */
-    public Crop uploadCropImage(User user, MultipartFile imageFile) throws IOException {
-        // 1. 이미지 파일 저장
-        String savedImagePath = registrationAnalysisService.saveImageFile(imageFile);
-
-        // 2. 작물 엔티티 생성 (분석 대기 상태)
-        Crop crop = new Crop();
-        crop.setUser(user);
-        crop.setCropImg(savedImagePath);
-        crop.setAnalysisStatus(AnalysisStatus.PENDING);
-        crop.setIsRegistered(false);
-        crop.setHarvest(false);
-
-        Crop savedCrop = cropRepository.save(crop);
-
-        // 3. 비동기로 재배방법 분석 시작
-        registrationAnalysisService.analyzeImageAsync(savedCrop.getId(), savedImagePath);
-
-        return savedCrop;
-    }
-//
-//    /**
-//     * 작물 등록 완료 (이름, 날짜 등 입력 후)
-//     */
-//    public Crop completeCropRegistration(Integer cropId, CropRegistrationDto dto) {
-//        Crop crop = cropRepository.findById(cropId)
-//                .orElseThrow(() -> new IllegalArgumentException("작물을 찾을 수 없습니다."));
-//
-//        // 분석이 완료된 경우에만 등록 가능
-//        if (crop.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
-//            throw new IllegalStateException("분석이 완료되지 않은 작물은 등록할 수 없습니다.");
-//        }
-//
-//        // 사용자 입력 정보 업데이트
-//        crop.setName(dto.getName());
-//        crop.setStartAt(dto.getStartAt());
-//        crop.setEndAt(dto.getEndAt());
-//        crop.setIsRegistered(true); // 등록 완료
-//
-//        return cropRepository.save(crop);
-//    }
-//
-    /**
-     * 사용자의 작물 목록 조회
-     */
-    @Transactional(readOnly = true)
-    public List<Crop> getUserCrops(User user) {
-        return cropRepository.findByUserOrderByCreatedAtDesc(user);
-    }
-//
-//    /**
-//     * 사용자의 등록된 작물 목록 조회
-//     */
-//    @Transactional(readOnly = true)
-//    public List<Crop> getUserRegisteredCrops(User user) {
-//        return cropRepository.findByUserAndIsRegisteredTrueOrderByCreatedAtDesc(user);
-//    }
-//
-    /**
-     * 작물 상세 정보 조회
-     */
-    @Transactional(readOnly = true)
-    public Crop getCropById(Integer cropId) {
-        return cropRepository.findById(cropId)
-                .orElseThrow(() -> new IllegalArgumentException("작물을 찾을 수 없습니다."));
-    }
-//
-
-//
-//    /**
-//     * 작물 삭제
-//     */
-//    public void deleteCrop(Integer cropId, User user) {
-//        Crop crop = cropRepository.findById(cropId)
-//                .orElseThrow(() -> new IllegalArgumentException("작물을 찾을 수 없습니다."));
-//
-//        // 권한 확인
-//        if (!crop.getUser().getId().equals(user.getId())) {
-//            throw new IllegalArgumentException("삭제 권한이 없습니다.");
-//        }
-//
-//        // 이미지 파일 삭제
-//        if (crop.getCropImg() != null) {
-//            try {
-//                File imageFile = new File(crop.getCropImg());
-//                if (imageFile.exists()) {
-//                    imageFile.delete();
-//                }
-//            } catch (Exception e) {
-//                log.warn("이미지 파일 삭제 실패: {}", crop.getCropImg(), e);
-//            }
-//        }
-//
-//        cropRepository.delete(crop);
-//    }
-//
-//    /**
-//     * 홈 화면용 사용자 작물 목록 조회 (등록된 것과 미등록된 것 모두)
-//     */
-//    @Transactional(readOnly = true)
-//    public List<HomeCropDto> getHomeCrops(User user) {
-//        List<Crop> crops = cropRepository.findByUserOrderByCreatedAtDesc(user);
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy년 M월 d일");
-//
-//        return crops.stream()
-//                .map(crop -> {
-//                    HomeCropDto dto = new HomeCropDto();
-//                    dto.setId(crop.getId());
-//                    dto.setName(crop.getName() != null ? crop.getName() : "분석 중인 작물");
-//                    dto.setCropImg(crop.getCropImg());
-//                    dto.setPlantingDate(crop.getStartAt() != null ?
-//                        crop.getStartAt().format(formatter) :
-//                        "재배 시작일 미입력");
-//                    dto.setIsRegistered(crop.getIsRegistered());
-//                    dto.setAnalysisStatus(crop.getAnalysisStatus().toString());
-//                    dto.setCropCategory(crop.getCropCategory() != null ?
-//                        crop.getCropCategory().toString() : "미분류");
-//                    return dto;
-//                })
-//                .collect(Collectors.toList());
-//    }
-//
-    /**
-     * 작물 태그별 진단 분석 (현재상태, 질병여부, 품질/시장성)
-     */
-    public com.planty.dto.crop.CropDetailAnalysisResult analyzeCropDetail(Crop crop, com.planty.entity.crop.AnalysisType analysisType) {
-        return diagnosisAnalysisService.analyzeCropDetail(crop, analysisType);
-    }
-
-    /**
-     * 새로운 통합 등록 방식: 텍스트 데이터와 이미지를 한 번에 처리하여 재배방법 분석 결과 반환
-     */
-    public Map<String, Object> analyzeCropWithData(User user, CropRegistrationDto cropData, MultipartFile imageFile) throws IOException {
-        return registrationAnalysisService.analyzeCropWithData(user, cropData, imageFile);
-    }
-
-    /**
-     * 최종 등록: 분석 결과와 텍스트 데이터를 DB에 저장
-     */
-    public Crop finalizeCropRegistration(User user, Map<String, Object> finalData) {
+        // 4) 모델 응답에서 텍스트 추출
+        String modelTextJson;
         try {
-            // 임시 작물 ID 추출
-            Integer tempCropId = (Integer) finalData.get("tempCropId");
-            if (tempCropId == null) {
-                throw new IllegalArgumentException("임시 작물 ID가 없습니다.");
+            // OpenAI 응답 파싱
+            JsonNode root = objectMapper.readTree(raw);
+            // 응답 구조 중 "/output/0/content/0/text" 경로에서 텍스트 가져오기
+            modelTextJson = root.at("/output/0/content/0/text").asText();
+            if (modelTextJson == null || modelTextJson.isBlank()) {
+                // 해당 경로에 텍스트가 없으면 전체 JSON을 문자열로 사용
+                modelTextJson = root.toString();
             }
+        } catch (Exception e) {
+            // JSON 파싱이 실패하면 원본 문자열 그대로 사용
+            modelTextJson = raw;
+        }
 
-            // 임시 작물 조회
-            Crop tempCrop = cropRepository.findById(tempCropId)
-                    .orElseThrow(() -> new IllegalArgumentException("임시 작물을 찾을 수 없습니다."));
+        // 5) 결과 DTO 생성 및 기본 값 세팅
+        CropAnalysisResDto res = new CropAnalysisResDto();
+        res.setCropName(formDto.getCropName());
+        res.setStartAt(formDto.getStartAt());
+        res.setEndAt(formDto.getEndAt());
 
-            // 권한 확인
-            if (!tempCrop.getUser().getId().equals(user.getId())) {
-                throw new IllegalArgumentException("권한이 없습니다.");
+        // 6) 모델이 반환한 JSON 텍스트를 파싱해서 필드에 매핑
+        try {
+            JsonNode j = objectMapper.readTree(modelTextJson);
+
+            // 1) 1차 매핑
+            res.setEnvironment(j.path("environment").asText(""));    // 환경
+            res.setTemperature(asStringFlexible(j.get("temperature")));    // 온도
+            res.setTall(asStringFlexible(j.get("tall")));    // 키
+            res.setHowTo(j.path("howTo").asText(""));    // 재배 방법
+
+            // 2) 보정: howTo 안에 JSON이 들어있다면 꺼내서 빈 칸 채우기
+            if (needsMerge(res)) {
+                mergeFromHowToJsonIfPresent(res.getHowTo(), res);
             }
-
-            // 분석이 완료되지 않은 경우
-            if (tempCrop.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
-                throw new IllegalArgumentException("이미지 분석이 완료되지 않았습니다.");
-            }
-
-            // 최종 등록 완료 처리
-            tempCrop.setIsRegistered(true);
-            Crop finalCrop = cropRepository.save(tempCrop);
-
-            log.info("작물 최종 등록 완료: Crop ID {}", finalCrop.getId());
-
-            return finalCrop;
 
         } catch (Exception e) {
-            log.error("최종 등록 중 오류 발생", e);
-            throw new RuntimeException("최종 등록에 실패했습니다: " + e.getMessage());
+            // JSON 파싱 실패 시, 빈 값으로 처리
+            res.setEnvironment("");
+            res.setTemperature("");
+            res.setTall("");
+            res.setHowTo(modelTextJson);    // 실패했을 경우 원본 문자열 전체를 howTo에 넣음
+        }
+
+        // 분석 결과 반환
+        return res;
+    }
+
+    // 모델이 반환한 JSON을 모두 문자열로 반환
+    private String asStringFlexible(JsonNode node) {
+        if (node == null || node.isNull()) return "";
+        if (node.isTextual()) return node.asText();
+        if (node.isNumber()) return node.numberValue().toString();
+        return node.toString();
+    }
+
+    // resDto 안에 비어있는 값이 있으면 merge가 필요하다고 반환
+    private boolean needsMerge(CropAnalysisResDto r) {
+        return isBlank(r.getEnvironment()) || isBlank(r.getTemperature()) || isBlank(r.getTall());
+    }
+
+    // null이나 공백만 있는 경우도 빈 문자열로 취급
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    // json 마크다운 코드 블럭을 벗기고 중괄호 구간만 추출해 JSON 파싱 시도
+    private void mergeFromHowToJsonIfPresent(String howToRaw, CropAnalysisResDto res) {
+        if (isBlank(howToRaw)) return;
+
+        String cleaned = howToRaw
+                .replaceAll("(?is)```json", "")
+                .replaceAll("(?is)```", "")
+                .trim();
+
+        // howTo 안에서 첫 '{' ~ 마지막 '}' 구간만 뽑기 (느슨한 보호막)
+        int s = cleaned.indexOf('{');
+        int e = cleaned.lastIndexOf('}');
+        if (s < 0 || e < s) return; // JSON 객체 없음
+
+        String maybeJson = cleaned.substring(s, e + 1);
+        try {
+            JsonNode x = objectMapper.readTree(maybeJson);
+
+            // 비어있는 필드만 채우기 (이미 값 있으면 건드리지 않음)
+            if (isBlank(res.getEnvironment())) {
+                res.setEnvironment(x.path("environment").asText(res.getEnvironment()));
+            }
+            if (isBlank(res.getTemperature())) {
+                res.setTemperature(asStringFlexible(x.get("temperature")));
+            }
+            if (isBlank(res.getTall())) {
+                res.setTall(asStringFlexible(x.get("tall")));
+            }
+
+            // howTo 본문이 JSON에도 있으면 교체, 없으면 기존 유지
+            String howToText = x.path("howTo").asText(null);
+            if (!isBlank(howToText)) {
+                res.setHowTo(howToText);
+            } else {
+                // 코드블럭 표식만 벗겨서 깔끔히
+                res.setHowTo(cleaned);
+            }
+        } catch (Exception ignore) {
+            // JSON 파싱 실패면 그대로 둠 (howTo는 원문 유지)
         }
     }
 
-    /**
-     * 작물 재배 완료 상태 변경
-     */
-    public Crop updateHarvestStatus(Integer cropId, User user, Boolean harvestStatus) {
-        Crop crop = cropRepository.findById(cropId)
-                .orElseThrow(() -> new IllegalArgumentException("작물을 찾을 수 없습니다."));
 
-        // 권한 확인
-        if (!crop.getUser().getId().equals(user.getId())) {
-            throw new IllegalArgumentException("권한이 없습니다.");
-        }
-
-        // 등록된 작물만 상태 변경 가능
-        if (!crop.getIsRegistered()) {
-            throw new IllegalArgumentException("등록되지 않은 작물은 상태를 변경할 수 없습니다.");
-        }
-
-        crop.setHarvest(harvestStatus);
-        Crop updatedCrop = cropRepository.save(crop);
-
-        log.info("작물 재배 완료 상태 변경: Crop ID {}, Harvest Status: {}", cropId, harvestStatus);
-
-        return updatedCrop;
-    }
+    // TODO: S3로 변환 시 이미지 URL 변환 로직으로 교체 (실행 확인 X)
+//    // 1) 임시 업로드 → URL 확보
+//    String imageUrl = storageService.store(formDto.getImageFile()); // 프리사인드/퍼블릭 URL
+//
+//    // 2) 프롬프트 변수(선택)
+//    var vars = java.util.Map.of(
+//            "cropName", formDto.getCropName() == null ? "" : formDto.getCropName(),
+//            "imageUrl", imageUrl
+//    );
+//
+//    // 3) URL로 호출 (파일은 더이상 넘기지 않음)
+//    String raw = openAiService.callOpenAiWithImageUrl(
+//            PromptKey.PLANT_ANALYSIS, vars, imageUrl
+//    );
 }
