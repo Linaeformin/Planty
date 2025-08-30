@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import retrofit2.http.Path;
 
 import java.io.IOException;
 
@@ -81,5 +82,22 @@ public class CropController {
 
         // 작물 정보 반환
         return ResponseEntity.ok(cropService.getHomeCrops(me.getId()));
+    }
+
+    // 작물 재배 상태 변경
+    @PatchMapping(value = "/{cropId:\\d+}")
+    public ResponseEntity<?> updateHarvest(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Integer cropId,
+            @RequestBody HarvestStatusFormDto harvestStatusFormDto
+    ) throws IOException {
+        // 권한이 없을 때
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // 재배 상태 업데이트
+        cropService.updateHarvest(cropId, me.getId(), harvestStatusFormDto.getHarvestStatus());
+
+        // 성공 json 반환
+        return ResponseEntity.ok(new ApiSuccess(200, "성공적으로 처리되었습니다."));
     }
 }
