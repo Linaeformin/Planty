@@ -109,6 +109,13 @@ public class GlobalExceptionHandler {
         return ApiError.of(413, "FILE_TOO_LARGE", "파일 용량을 확인해주세요.");
     }
 
+    // 415: 요청 전체 또는 파트의 Content-Type이 맞지 않을 때
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<?> handleUnsupportedMediaType(org.springframework.web.HttpMediaTypeNotSupportedException ex) {
+        return ApiError.of(415, "UNSUPPORTED_MEDIA_TYPE",
+                "요청의 Content-Type이 올바르지 않습니다.");
+    }
+
     // 그 외 멀티파트 처리 중 예외(랩핑된 경우 포함)
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<?> handleMultipart(MultipartException ex) {
