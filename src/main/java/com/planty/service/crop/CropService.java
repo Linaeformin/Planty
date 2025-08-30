@@ -6,6 +6,7 @@ import com.planty.common.prompt.OpenAiService;
 import com.planty.common.prompt.PromptKey;
 import com.planty.dto.crop.CropAnalysisDto;
 import com.planty.dto.crop.CropAnalysisResDto;
+import com.planty.dto.crop.CropHomeResDto;
 import com.planty.dto.crop.CropRegisterDto;
 import com.planty.entity.crop.Crop;
 import com.planty.entity.user.User;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.List;
 
 
 // 작물 서비스
@@ -186,6 +188,17 @@ public class CropService {
         } catch (Exception ignore) {
             // JSON 파싱 실패면 그대로 둠 (howTo는 원문 유지)
         }
+    }
+
+    // 홈의 내가 등록한 작물 조회
+    public List<CropHomeResDto> getHomeCrops(Integer userId) throws IOException {
+        // 내가 등록한 작물 중 재배 되지 않은 작물
+        List<Crop> crops = cropRepository.findByUser_IdAndHarvestFalseOrderByCreatedAtDesc(userId);
+
+        // DTO로 반환
+        return crops.stream()
+                .map(CropHomeResDto::of)
+                .toList();
     }
 
 

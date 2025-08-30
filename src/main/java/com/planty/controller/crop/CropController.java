@@ -8,10 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -72,5 +69,17 @@ public class CropController {
 
         // 성공 응답
         return ResponseEntity.status(201).body(new ApiSuccess(201, "성공적으로 처리되었습니다."));
+    }
+
+    // 홈의 작물 목록
+    @GetMapping(value = "")
+    public ResponseEntity<?> getCrop(
+            @AuthenticationPrincipal CustomUserDetails me
+    ) throws IOException {
+        // 권한이 없을 때
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // 작물 정보 반환
+        return ResponseEntity.ok(cropService.getHomeCrops(me.getId()));
     }
 }
