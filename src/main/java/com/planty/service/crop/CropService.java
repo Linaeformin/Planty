@@ -6,11 +6,17 @@ import com.planty.common.prompt.OpenAiService;
 import com.planty.common.prompt.PromptKey;
 import com.planty.dto.crop.CropAnalysisDto;
 import com.planty.dto.crop.CropAnalysisResDto;
+import com.planty.dto.crop.CropRegisterDto;
+import com.planty.entity.crop.Crop;
+import com.planty.entity.user.User;
 import com.planty.repository.crop.CropRepository;
+import com.planty.repository.user.UserRepository;
 import com.planty.storage.StorageService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
 
 
 // 작물 서비스
@@ -23,6 +29,7 @@ public class CropService {
     private final StorageService storageService;
     private final OpenAiService openAiService;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
 
     // 이미지와 작물 이름을 받아서 OpenAI API로 분석 요청 후 결과를 DTO로 변환하는 메소드
     public CropAnalysisResDto analyze(CropAnalysisDto formDto) {
@@ -90,6 +97,35 @@ public class CropService {
 
         // 분석 결과 반환
         return res;
+    }
+
+    // 작물 저장
+    public void saveCrop(Integer userId, CropRegisterDto res) throws IOException {
+        // 작물을 등록하려는 유저 검증
+        User user = userRepository.getReferenceById(userId);
+
+        // 파일 URL 초기화
+        String fileUrl = null;
+        if (res.getImageFile() != null && !res.getImageFile().isEmpty()) {
+            // "crops"라는 폴더에 저장 (uploads/crops/...)
+            fileUrl = storageService.save(res.getImageFile(), "crops");
+        }
+
+        // 작물 객체 생성 및 데이터 삽입
+        Crop crop = new Crop();
+        crop.setUser(user);
+        crop.setName(res.getCropName());
+        crop.setCropImg(fileUrl); // DB에는 URL 문자열만 저장
+        crop.setEnvironment(res.getEnvironment());
+        crop.setTemperature(res.getTemperature());
+        crop.setHeight(res.getHeight());
+        crop.setHowTo(res.getHowTo());
+        crop.setHarvest(false);
+        crop.setStartAt(res.getStartAt());
+        crop.setEndAt(res.getEndAt());
+
+        // 작물 저장
+        cropRepository.save(crop);
     }
 
     // 모델이 반환한 JSON을 모두 문자열로 반환
