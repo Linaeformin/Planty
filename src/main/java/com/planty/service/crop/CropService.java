@@ -176,6 +176,14 @@ public class CropService {
         cropRepository.save(crop);
     }
 
+    // 작물 삭제
+    public void deleteCrop(Integer cropId, Integer meId) {
+        // 대상 작물 조회 및 소유권 검증
+        Crop crop = requireOwnCrop(cropId, meId);
+
+        // 해당 작물 삭제
+        cropRepository.delete(crop);
+    }
 
     // 작물 조회 및 소유자 검증
     private Crop requireOwnCrop(Integer cropId,
