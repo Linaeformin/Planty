@@ -4,6 +4,7 @@ import com.planty.common.ApiSuccess;
 import com.planty.config.CustomUserDetails;
 import com.planty.dto.crop.*;
 import com.planty.service.crop.CropService;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.codec.CodecProperties;
 import org.springframework.http.MediaType;
@@ -109,7 +110,7 @@ public class CropController {
             @AuthenticationPrincipal CustomUserDetails me,
             @PathVariable Integer cropId,
             @RequestPart("form") CropUpdateFormDto cropUpdateFormDto,
-            @RequestPart("image") MultipartFile image
+            @Nullable @RequestPart("image") MultipartFile image
     ) throws IOException {
         // 권한이 없을 떄
         if (me == null) return ResponseEntity.status(401).build();
