@@ -8,6 +8,7 @@ import com.planty.dto.crop.CropAnalysisDto;
 import com.planty.dto.crop.CropAnalysisResDto;
 import com.planty.dto.crop.CropHomeResDto;
 import com.planty.dto.crop.CropRegisterDto;
+import com.planty.entity.board.Board;
 import com.planty.entity.crop.Crop;
 import com.planty.entity.user.User;
 import com.planty.repository.crop.CropRepository;
@@ -15,7 +16,9 @@ import com.planty.repository.user.UserRepository;
 import com.planty.storage.StorageService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.List;
@@ -128,6 +131,36 @@ public class CropService {
 
         // 작물 저장
         cropRepository.save(crop);
+    }
+
+    // 재배 상태 업데이트
+    public void updateHarvest(Integer cropId,
+                              Integer meId,
+                              Boolean harvest) {
+
+        // 대상 작물 조회 및 소유자 검증
+        Crop crop = requireOwnCrop(cropId, meId);
+
+        // 재배 상태 변경
+        crop.setHarvest(harvest);
+
+        // 저장
+        cropRepository.save(crop);
+    }
+
+    // 작물 조회 및 소유자 검증
+    private Crop requireOwnCrop(Integer cropId,
+                                  Integer meId){
+        // 1) 대상 작물 조회
+        Crop crop = cropRepository.findById(cropId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NOT_FOUND"));
+
+        // 2) 소유자 검증
+        if (!crop.getUser().getId().equals(meId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+
+        return crop;
     }
 
     // 모델이 반환한 JSON을 모두 문자열로 반환
