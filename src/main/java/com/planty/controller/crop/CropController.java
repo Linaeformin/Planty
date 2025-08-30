@@ -121,4 +121,20 @@ public class CropController {
         // 성공 json 반환
         return ResponseEntity.ok(new ApiSuccess(200, "성공적으로 처리되었습니다."));
     }
+
+    // 작물 삭제
+    @DeleteMapping(value = "/{cropId:\\d+}")
+    public ResponseEntity<?> deleteCrop(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Integer cropId
+    ) throws IOException {
+        // 권한이 없을 떄
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // 작물 삭제
+        cropService.deleteCrop(cropId, me.getId());
+
+        // 성공 json 반환
+        return ResponseEntity.ok(new ApiSuccess(200, "성공적으로 처리되었습니다."));
+    }
 }

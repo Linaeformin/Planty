@@ -42,9 +42,6 @@ public class Crop {
 
     private Boolean harvest;
 
-    @OneToMany(mappedBy = "crop", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CropCategory> categories = new ArrayList<>();
-
     @CreationTimestamp
     private LocalDateTime createdAt;
 
