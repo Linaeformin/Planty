@@ -148,6 +148,7 @@ public class CropService {
 
     // 작물 수정
     public void updateCrop(Integer cropId, Integer meId, CropUpdateFormDto dto, MultipartFile imageFile) throws IOException {
+        // 작물 조회 및 소유권 검증
         Crop crop = requireOwnCrop(cropId, meId);
 
         // 1) 날짜 갱신 (보낸 값만)
