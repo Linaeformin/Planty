@@ -4,7 +4,9 @@ import com.planty.common.ApiSuccess;
 import com.planty.config.CustomUserDetails;
 import com.planty.dto.crop.*;
 import com.planty.service.crop.CropService;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.codec.CodecProperties;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +24,7 @@ import java.io.IOException;
 public class CropController {
 
     private final CropService cropService;
+    private final CodecProperties codecProperties;
 
     // 작물 이미지 분석
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -96,6 +99,24 @@ public class CropController {
 
         // 재배 상태 업데이트
         cropService.updateHarvest(cropId, me.getId(), harvestStatusFormDto.getHarvestStatus());
+
+        // 성공 json 반환
+        return ResponseEntity.ok(new ApiSuccess(200, "성공적으로 처리되었습니다."));
+    }
+
+    // 작물 수정
+    @PutMapping(value = "/{cropId:\\d+}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateCrop(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Integer cropId,
+            @RequestPart("form") CropUpdateFormDto cropUpdateFormDto,
+            @Nullable @RequestPart("image") MultipartFile image
+    ) throws IOException {
+        // 권한이 없을 떄
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // 작물 수정
+        cropService.updateCrop(cropId, me.getId(), cropUpdateFormDto, image);
 
         // 성공 json 반환
         return ResponseEntity.ok(new ApiSuccess(200, "성공적으로 처리되었습니다."));

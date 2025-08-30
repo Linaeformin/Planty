@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planty.common.prompt.OpenAiService;
 import com.planty.common.prompt.PromptKey;
-import com.planty.dto.crop.CropAnalysisDto;
-import com.planty.dto.crop.CropAnalysisResDto;
-import com.planty.dto.crop.CropHomeResDto;
-import com.planty.dto.crop.CropRegisterDto;
+import com.planty.dto.crop.*;
 import com.planty.entity.board.Board;
 import com.planty.entity.crop.Crop;
 import com.planty.entity.user.User;
@@ -18,6 +15,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
@@ -147,6 +145,37 @@ public class CropService {
         // 저장
         cropRepository.save(crop);
     }
+
+    // 작물 수정
+    public void updateCrop(Integer cropId, Integer meId, CropUpdateFormDto dto, MultipartFile imageFile) throws IOException {
+        // 작물 조회 및 소유권 검증
+        Crop crop = requireOwnCrop(cropId, meId);
+
+        // 1) 날짜 갱신 (보낸 값만)
+        if (dto.getStartAt() != null) {
+            crop.setStartAt(dto.getStartAt());
+        }
+        if (dto.getEndAt() != null) {
+            crop.setEndAt(dto.getEndAt());
+        }
+
+        // 2) 이미지 갱신 규칙 (보낸 값만)
+        if (imageFile != null && !imageFile.isEmpty()) {
+            // 새 파일 업로드
+            String oldUrl = crop.getCropImg();
+            String newUrl = storageService.save(imageFile, "crops");
+            crop.setCropImg(newUrl);
+
+            // 기존 파일 정리
+            if (oldUrl != null && !oldUrl.isBlank()) {
+                try { storageService.deleteByUrl(oldUrl); } catch (Exception ignore) {}
+            }
+        }
+
+        // 작물 수정 저장
+        cropRepository.save(crop);
+    }
+
 
     // 작물 조회 및 소유자 검증
     private Crop requireOwnCrop(Integer cropId,
