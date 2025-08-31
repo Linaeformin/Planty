@@ -10,5 +10,4 @@ import lombok.Setter;
 public class DiaryAnalysisFormDto {
     private PromptKey promptKey;
     private String cropName;
-    private Integer cropId;
 }

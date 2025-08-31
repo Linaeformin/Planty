@@ -11,10 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 // 재배 일지
@@ -26,11 +23,12 @@ public class DiaryController {
     private final DiaryService diaryService;
 
     // 재배 일지 이미지 분석
-    @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/analyze/{cropId:\\d+}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DiaryAnalysisResDto> analyze(
             @AuthenticationPrincipal CustomUserDetails me,
             @RequestPart("form") DiaryAnalysisFormDto form,
-            @RequestPart("image") MultipartFile image
+            @RequestPart("image") MultipartFile image,
+            @PathVariable Integer cropId
     ) {
         // 권한이 없을 때
         if (me == null) return ResponseEntity.status(401).build();
@@ -40,7 +38,7 @@ public class DiaryController {
         dto.setCropName(form.getCropName());
         dto.setPromptKey(form.getPromptKey());
         dto.setImage(image);
-        dto.setCropId(form.getCropId());
+        dto.setCropId(cropId);
 
         // 반환
         return ResponseEntity.ok(diaryService.diaryAnalysis(me.getId(), dto));
