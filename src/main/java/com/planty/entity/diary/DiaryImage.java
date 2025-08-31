@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 
@@ -28,5 +29,5 @@ public class DiaryImage {
     private Boolean thumbnail = false;
 
     @CreationTimestamp
-    private LocalDate createdAt;
+    private Instant createdAt;
 }
