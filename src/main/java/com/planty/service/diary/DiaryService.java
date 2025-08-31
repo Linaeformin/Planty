@@ -13,6 +13,7 @@ import com.planty.entity.user.User;
 import com.planty.repository.crop.CropRepository;
 import com.planty.repository.diary.DiaryRepository;
 import com.planty.repository.user.UserRepository;
+import com.planty.storage.StorageService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 // 재배 일지 서비스
 @Service
@@ -33,6 +35,7 @@ public class DiaryService {
     private final OpenAiService openAiService;     // OpenAI 호출 어댑터
     private final ObjectMapper objectMapper;       // JSON 파싱
     private final CropRepository cropRepository;   // 소유자 검증 및 작물 조회
+    private final StorageService storageService;
 
     // 재배 일지 이미지 분석
     public DiaryAnalysisResDto diaryAnalysis(Integer meId, DiaryAnalysisDto dto) {
@@ -125,6 +128,7 @@ public class DiaryService {
     }
 
     // 재배 일지 상세 조회
+    // TODO: isOwner key 추가
     public DiaryDetailsResDto getDiaryDetail(Integer userId, Integer cropId, Integer diaryId) {
 
         // 1) 다이어리 없으면 404
@@ -152,6 +156,82 @@ public class DiaryService {
         // 반환
         return dto;
     }
+
+    // 재배 일지 수정
+    public void updateDiary(Integer userId, DiaryDto dto, Integer diaryId, List<String> keepImageUrls, Integer cropId) {
+        // 1) 대상 재배 일지 조회
+        Diary diary = diaryRepository.findDetailById(diaryId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일지입니다."));
+
+        // 2) 재배 일지의 crop과 접근 경로의 crop 비교
+        if (diary.getCrop() != null && !diary.getCrop().getId().equals(cropId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "MISMATCH_CROP_ID");
+        }
+
+        // 3) 권한 체크 (내 재배 일지가 아닐 때)
+        if (!diary.getUser().getId().equals(userId)) {
+            throw new SecurityException("접근 권한이 없습니다.");
+        }
+
+        // 4) 본문 필드 업데이트 (null 허용 정책은 필요에 맞게 조정)
+        if (dto.getTitle() != null)   diary.setTitle(dto.getTitle());
+        if (dto.getContent() != null) diary.setContent(dto.getContent());
+        if (dto.getAnalysis() != null)   diary.setAnalysis(dto.getAnalysis());
+
+        // 5) 이미지 동기화
+        // 현재 이미지
+        List<DiaryImage> currentImages = diary.getImages() != null ? diary.getImages() : new ArrayList<>();
+
+        // 유지할 목록 (null -> 빈 리스트)
+        List<String> keep = keepImageUrls != null ? keepImageUrls : Collections.emptyList();
+
+        // 새로 추가할 URL 목록 (컨트롤러에서 파일 업로드 후 전달된 것)
+        List<String> newUrls = (dto.getImageUrls() != null) ? dto.getImageUrls() : Collections.emptyList();
+
+        // (1) 삭제 대상 = 현재 - keep
+        List<String> keepSet = new ArrayList<>(keep); // 순서 보존용
+
+        List<DiaryImage> toRemove = new ArrayList<>();
+        for (DiaryImage img : currentImages) {
+            if (!keepSet.contains(img.getDiaryImg())) {
+                toRemove.add(img);
+            }
+        }
+
+        for (DiaryImage img : toRemove) {
+            try {
+                storageService.deleteByUrl(img.getDiaryImg());
+            } catch (Exception ignored) {
+
+            }
+        }
+
+        // DB 고아 삭제(orphanRemoval=true)와 함께
+        currentImages.removeAll(toRemove);
+
+        // (2) 새 이미지 추가 (중복 방지)
+        // 이미 남아있는 URL 집합
+        Set<String> remain = currentImages.stream().map(DiaryImage::getDiaryImg).collect(Collectors.toSet());
+        Set<String> added = new HashSet<>();
+        for (String url : newUrls) {
+            if (url == null || url.isBlank()) continue;
+            if (remain.contains(url) || added.contains(url)) continue;
+            DiaryImage di = new DiaryImage();
+            di.setDiary(diary);
+            di.setDiaryImg(url);
+            di.setThumbnail(false);
+            currentImages.add(di);
+            added.add(url);
+        }
+
+        // (3) 썸네일 재지정
+        // 규칙: 최종 이미지 목록의 첫 번째 이미지를 thumbnail=true로
+        setThumbnailByOrder(currentImages, keepSet, newUrls);
+
+        // 6) 저장
+        diaryRepository.save(diary);
+    }
+
     // ─────────────────────────── 공통 유틸 ───────────────────────────
 
     // 재배 일지 전용 프롬프트 키만 허용
@@ -211,6 +291,36 @@ public class DiaryService {
         // 소유한 작물이 아닐 때
         if (!crop.getUser().getId().equals(meId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+    }
+
+    // 이미지 썸네일 지정
+    private void setThumbnailByOrder(List<DiaryImage> images,
+                                     List<String> keepImageUrls,
+                                     List<String> newUrls) {
+        // 전체 타겟 순서
+        List<String> ordered = new ArrayList<>();
+        if (keepImageUrls != null) ordered.addAll(keepImageUrls);
+        if (newUrls != null) ordered.addAll(newUrls);
+
+        // 먼저 모두 false
+        for (DiaryImage img : images) {
+            img.setThumbnail(false);
+        }
+
+        // ordered 기준으로 첫 번째로 매칭되는 이미지를 썸네일
+        for (String first : ordered) {
+            for (DiaryImage img : images) {
+                if (first != null && first.equals(img.getDiaryImg())) {
+                    img.setThumbnail(true);
+                    return;
+                }
+            }
+        }
+
+        // ordered가 비었거나 매칭 실패 시, 남아있는 리스트 첫 번째를 썸네일
+        if (!images.isEmpty()) {
+            images.get(0).setThumbnail(true);
         }
     }
 }
