@@ -185,6 +185,19 @@ public class CropService {
         cropRepository.delete(crop);
     }
 
+    // 홈의 내가 등록한 작물 조회
+    public List<CropHomeResDto> getHomeCrops(Integer userId) throws IOException {
+        // 내가 등록한 작물 중 재배 되지 않은 작물
+        List<Crop> crops = cropRepository.findByUser_IdAndHarvestFalseOrderByCreatedAtDesc(userId);
+
+        // DTO로 반환
+        return crops.stream()
+                .map(CropHomeResDto::of)
+                .toList();
+    }
+
+    // ─────────────────────────── 공통 유틸 ───────────────────────────
+
     // 작물 조회 및 소유자 검증
     private Crop requireOwnCrop(Integer cropId,
                                   Integer meId){
@@ -256,22 +269,9 @@ public class CropService {
                 res.setHowTo(cleaned);
             }
         } catch (Exception ignore) {
-            // JSON 파싱 실패면 그대로 둠 (howTo는 원문 유지)
+            // JSON 파싱 실패면 그대로
         }
     }
-
-    // 홈의 내가 등록한 작물 조회
-    public List<CropHomeResDto> getHomeCrops(Integer userId) throws IOException {
-        // 내가 등록한 작물 중 재배 되지 않은 작물
-        List<Crop> crops = cropRepository.findByUser_IdAndHarvestFalseOrderByCreatedAtDesc(userId);
-
-        // DTO로 반환
-        return crops.stream()
-                .map(CropHomeResDto::of)
-                .toList();
-    }
-
-
     // TODO: S3로 변환 시 이미지 URL 변환 로직으로 교체 (실행 확인 X)
 //    // 1) 임시 업로드 → URL 확보
 //    String imageUrl = storageService.store(formDto.getImageFile()); // 프리사인드/퍼블릭 URL
