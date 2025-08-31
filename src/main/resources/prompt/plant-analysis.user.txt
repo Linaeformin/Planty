@@ -1,2 +1,1 @@
-분석할 이미지 URL: {{imageUrl}}
 작물 이름: {{cropName}}
