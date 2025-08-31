@@ -137,4 +137,17 @@ public class CropController {
         // 성공 json 반환
         return ResponseEntity.ok(new ApiSuccess(200, "성공적으로 처리되었습니다."));
     }
+
+    // 작물 + 재배 일지 목록
+    @GetMapping(value = "/{cropId:\\d+}")
+    public ResponseEntity<CropDetailsResDto> getCropDetail(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Integer cropId
+    ) throws IOException {
+        // 권한이 없을 때
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // 작물 정보 가져오기
+        return ResponseEntity.ok(cropService.getCropDetails(cropId, me.getId()));
+    }
 }

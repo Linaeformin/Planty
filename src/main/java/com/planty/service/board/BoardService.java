@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -342,6 +343,7 @@ public class BoardService {
 
         // 날짜만 추출
         String time = diary.getCreatedAt()
+                .atZone(ZoneId.of("Asia/Seoul"))
                 .format(DateTimeFormatter.ofPattern("yyyy.MM.dd."));
 
         // 프론트에 보내주는 Dto 반환
