@@ -1,6 +1,8 @@
 package com.planty.controller.diary;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planty.common.ApiSuccess;
 import com.planty.config.CustomUserDetails;
 import com.planty.dto.diary.*;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -100,4 +103,49 @@ public class DiaryController {
         return ResponseEntity.ok(diaryService.getDiaryDetail(me.getId(), cropId, diaryId));
     }
 
+    // 재배 일지 수정
+    @PutMapping("/{cropId:\\d+}/details/{diaryId:\\d+}")
+    public ResponseEntity<?> updateDiary(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Integer cropId,
+            @PathVariable Integer diaryId,
+
+            // form 파트는 그대로 DTO 바인딩 가능 (application/json로 보내면 스프링이 매핑해줌)
+            @RequestPart("form") @Validated DiaryFormDto form,
+
+            // imageUrls는 JSON 배열로 받기 → String으로 받고 직접 파싱
+            @RequestPart(value = "imageUrls", required = false) String imageUrlsJson,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
+
+    ) throws IOException {
+        // 권한이 없을 때
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // (1) 새 파일 업로드 → URL 생성
+        List<String> newUrls = new ArrayList<>();
+        if (images != null) {
+            for (MultipartFile f : images) {
+                if (!f.isEmpty()) newUrls.add(storageService.save(f, "diary"));
+            }
+        }
+
+        // (2) JSON 배열 파싱 (null/빈문자열 방어)
+        List<String> keepImageUrls = null;
+        if (imageUrlsJson != null && !imageUrlsJson.isBlank()) {
+            keepImageUrls = new ObjectMapper().readValue(
+                    imageUrlsJson, new TypeReference<List<String>>() {});
+        }
+
+        // (3) 서비스 DTO 구성
+        DiaryDto dto = new DiaryDto();
+        dto.setTitle(form.getTitle());
+        dto.setContent(form.getContent());
+        dto.setImageUrls(newUrls);
+
+        // (4) 업데이트
+        diaryService.updateDiary(me.getId(), dto, diaryId, keepImageUrls, cropId);
+
+        // 반환
+        return ResponseEntity.status(200).body(new ApiSuccess(200, "성공적으로 처리되었습니다."));
+    }
 }
