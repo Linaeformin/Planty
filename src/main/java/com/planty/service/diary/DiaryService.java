@@ -52,32 +52,29 @@ public class DiaryService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CROP_ID_REQUIRED");
         }
 
-        // ── 1) 소유 작물 검증 ────────────────────────────
+        // 1) 소유 작물 검증
         requireOwnCrop(dto.getCropId(), meId);
 
-        // ── 2) 이미지 파일 검증 ────────────────────────────────────────────
+        // 2) 이미지 파일 검증
         MultipartFile image = dto.getImage();
         if (image == null || image.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IMAGE_REQUIRED");
         }
 
-        // ── 3) 프롬프트 변수 구성 ──────────────────────────────────────────
-        //    - 모델 프롬프트에서 참조할 메타 데이터
+        // 3) 프롬프트에 cropName 변수 삽입
         Map<String, String> vars = Map.of("cropName", dto.getCropName() == null ? "" : dto.getCropName());
 
-        // ── 4) OpenAI 호출 (서버 저장 없이: 파일 바이너리 그대로 전달) ───────
+        // 4) OpenAI 호출
         String raw = openAiService.callOpenAi(
                 dto.getPromptKey(),
                 vars,
                 image  // 이미지를 그대로 전송
         );
 
-        // ── 5) 모델 응답에서 텍스트 안전 추출 ─────────────────────────────
-        //    - 우선 경로("/output/0/content/0/text") 시도 → 없으면 전체 JSON 문자열 → JSON 아님이면 원문 그대로
+        // 5) 모델 응답에서 텍스트 추출
         String modelText = extractModelText(raw);
 
         // ── 6) 최종 결과 텍스트 확정 ──────────────────────────────────────
-        //    - JSON이면 { analysis | result | summary } 등 우선 적용, 없으면 JSON 통째로/원문 사용
         String analysis = coerceAnalysis(modelText);
 
         // ── 7) 응답 DTO 매핑 ──────────────────────────────────────────────
@@ -98,7 +95,7 @@ public class DiaryService {
                 || key == PromptKey.DIARY_MARKET;
     }
 
-    // OpenAI 응답에서 텍스트 추출
+    // 우선 경로("/output/0/content/0/text") 시도 → 없으면 전체 JSON 문자열 → JSON 아님이면 원문 그대로
     private String extractModelText(String raw) {
         // 응답 데이터가 없을 떄
         if (raw == null) return "";
