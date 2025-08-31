@@ -50,7 +50,7 @@ public class DiaryController {
     }
 
     // 재배 일지 작성
-    @PostMapping(value = "create/{cropId:\\d+}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/create/{cropId:\\d+}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> create(
             @AuthenticationPrincipal CustomUserDetails me,
             @RequestPart("form")DiaryFormDto form,
@@ -85,4 +85,19 @@ public class DiaryController {
         // 반환
         return ResponseEntity.status(201).body(new ApiSuccess(201, "성공적으로 처리되었습니다."));
     }
+
+    // 재배 일지 상세 조회
+    @GetMapping("/{cropId:\\d+}/details/{diaryId:\\d+}")
+    public ResponseEntity<DiaryDetailsResDto> getDetails(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Integer cropId,
+            @PathVariable Integer diaryId
+    ) throws IOException {
+        // 권한이 없을 때
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // 서비스 호출 및 결과 반환
+        return ResponseEntity.ok(diaryService.getDiaryDetail(me.getId(), cropId, diaryId));
+    }
+
 }

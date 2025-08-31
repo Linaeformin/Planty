@@ -216,7 +216,7 @@ public class CropService {
 
         // 3) 해당 작물 재배일지 목록 (최신순) - 이미 @EntityGraph로 N+1 방지됨
         List<DiaryListDto> diaryListDtos = diaryRepository
-                .findByCropIdOrderByCreatedAtDesc(cropId)
+                .findByCrop_IdOrderByCreatedAtDesc(cropId)
                 .stream()
                 .map(DiaryListDto::of) // or builder로 직접 매핑
                 .toList();

@@ -317,7 +317,7 @@ public class BoardService {
         Integer cropId = boardRepository.findCropIdByBoardId(boardId);
 
         // 재배 일지 목록 가져오기
-        List<Diary> diaries = diaryRepository.findByCropIdOrderByCreatedAtDesc(cropId);
+        List<Diary> diaries = diaryRepository.findByCrop_IdOrderByCreatedAtDesc(cropId);
 
         // DTO로 변환
         return diaries.stream()

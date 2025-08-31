@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planty.common.prompt.OpenAiService;
 import com.planty.common.prompt.PromptKey;
-import com.planty.dto.diary.DiaryAnalysisDto;
-import com.planty.dto.diary.DiaryAnalysisResDto;
-import com.planty.dto.diary.DiaryDto;
+import com.planty.dto.diary.*;
 import com.planty.entity.board.BoardImage;
 import com.planty.entity.crop.Crop;
 import com.planty.entity.diary.Diary;
@@ -22,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 // 재배 일지 서비스
 @Service
@@ -129,6 +124,34 @@ public class DiaryService {
         diaryRepository.save(diary);
     }
 
+    // 재배 일지 상세 조회
+    public DiaryDetailsResDto getDiaryDetail(Integer userId, Integer cropId, Integer diaryId) {
+
+        // 1) 다이어리 없으면 404
+        Diary diary = diaryRepository.findDetailById(diaryId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NOT_FOUND"));
+
+        // 2) 다이어리 이미지를 리스트로
+        List<DiaryImageDto> imageDtos = diary.getImages() == null ? List.of()
+                : diary.getImages().stream()
+                .map(img -> DiaryImageDto.builder()
+                        .id(img.getId())
+                        .url(img.getDiaryImg())
+                        .build())
+                .toList();
+
+        // 3) 프론트 응답용 DTO에 데이터 넣기
+        DiaryDetailsResDto dto = DiaryDetailsResDto.builder()
+                .diaryId(diary.getId())
+                .title(diary.getTitle())
+                .content(diary.getContent())
+                .analysis(diary.getAnalysis())  // null이면 아예 빠짐 (@JsonInclude)
+                .images(imageDtos)
+                .build();
+
+        // 반환
+        return dto;
+    }
     // ─────────────────────────── 공통 유틸 ───────────────────────────
 
     // 재배 일지 전용 프롬프트 키만 허용

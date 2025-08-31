@@ -13,10 +13,13 @@ import java.util.Optional;
 public interface DiaryRepository extends JpaRepository<Diary, Integer> {
     
     // 재배일지 상세 조회 (연관 엔티티 함께 로드)
-    @EntityGraph(attributePaths = {"user", "crop", "images"})
     Optional<Diary> findById(Integer id);
+
+    // 상세 전용 - 연관 한 번에 가져오기
+    @EntityGraph(attributePaths = {"user", "crop", "images"})
+    Optional<Diary> findDetailById(Integer id);
 
     // 작물별 재배일지 목록 조회 (최신순)
     @EntityGraph(attributePaths = {"user", "crop", "images"})
-    List<Diary> findByCropIdOrderByCreatedAtDesc(Integer cropId);
+    List<Diary> findByCrop_IdOrderByCreatedAtDesc(Integer cropId);
 }
