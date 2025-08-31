@@ -6,7 +6,12 @@ import com.planty.common.prompt.OpenAiService;
 import com.planty.common.prompt.PromptKey;
 import com.planty.dto.diary.DiaryAnalysisDto;
 import com.planty.dto.diary.DiaryAnalysisResDto;
+import com.planty.dto.diary.DiaryDto;
+import com.planty.entity.board.BoardImage;
 import com.planty.entity.crop.Crop;
+import com.planty.entity.diary.Diary;
+import com.planty.entity.diary.DiaryImage;
+import com.planty.entity.user.User;
 import com.planty.repository.crop.CropRepository;
 import com.planty.repository.diary.DiaryRepository;
 import com.planty.repository.user.UserRepository;
@@ -17,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // 재배 일지 서비스
@@ -84,6 +91,42 @@ public class DiaryService {
         res.setAnalysis(analysis);
 
         return res;
+    }
+
+    // 재배 일지 작성
+    public void saveDiary(Integer userId, DiaryDto dto, Integer cropId) {
+        // 유저 권한 확인
+        requireOwnCrop(cropId, userId);
+
+        // 작성자 객체
+        User user = userRepository.getReferenceById(userId);
+
+        // 작물 객체
+        Crop crop = cropRepository.getReferenceById(cropId);
+
+        // 재배 일지 생성 및 데이터 삽입
+        Diary diary = new Diary();
+        diary.setTitle(dto.getTitle());
+        diary.setContent(dto.getContent());
+        diary.setUser(user);
+        diary.setCrop(crop);
+
+        // AI 분석 없이 재배 일지를 등록할 경우
+        if(dto.getAnalysis() != null) diary.setAnalysis(dto.getAnalysis());
+
+        // 재배 일지 이미지 삽입
+        List<DiaryImage> imgs = new ArrayList<>();
+        for (int i = 0; i < dto.getImageUrls().size(); i++) {
+            DiaryImage di = new DiaryImage();
+            di.setDiary(diary);
+            di.setDiaryImg(dto.getImageUrls().get(i));
+            di.setThumbnail(i == 0);
+            imgs.add(di);
+        }
+        diary.setImages(imgs);
+
+        // 재배 일지 저장
+        diaryRepository.save(diary);
     }
 
     // ─────────────────────────── 공통 유틸 ───────────────────────────
