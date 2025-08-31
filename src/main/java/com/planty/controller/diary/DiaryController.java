@@ -148,4 +148,21 @@ public class DiaryController {
         // 반환
         return ResponseEntity.status(200).body(new ApiSuccess(200, "성공적으로 처리되었습니다."));
     }
+
+    // 재배 일지 삭제
+    @DeleteMapping("/{cropId:\\d+}/details/{diaryId:\\d+}")
+    public ResponseEntity<?> deleteDiary(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Integer cropId,
+            @PathVariable Integer diaryId
+    ) throws IOException {
+        // 권한이 없을 떄
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // 삭제
+        diaryService.deleteDiary(me.getId(), cropId, diaryId);
+
+        // 성공 json 반환
+        return ResponseEntity.status(200).body(new ApiSuccess(200, "성공적으로 처리되었습니다."));
+    }
 }

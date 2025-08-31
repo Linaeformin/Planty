@@ -235,6 +235,26 @@ public class DiaryService {
         diaryRepository.save(diary);
     }
 
+    // 재배 일지 삭제
+    public void deleteDiary(Integer userId, Integer cropId, Integer diaryId) {
+        // 1) 대상 재배 일지 조회
+        Diary diary = diaryRepository.findDetailById(diaryId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일지입니다."));
+
+        // 2) 재배 일지의 crop과 접근 경로의 crop 비교
+        if (diary.getCrop() != null && !diary.getCrop().getId().equals(cropId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "MISMATCH_CROP_ID");
+        }
+
+        // 3) 권한 체크 (내 재배 일지가 아닐 때)
+        if (!diary.getUser().getId().equals(userId)) {
+            throw new SecurityException("접근 권한이 없습니다.");
+        }
+
+        // 해당 재배 일지 삭제
+        diaryRepository.delete(diary);
+    }
+
     // ─────────────────────────── 공통 유틸 ───────────────────────────
 
     // 재배 일지 전용 프롬프트 키만 허용
