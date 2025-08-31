@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planty.common.prompt.OpenAiService;
 import com.planty.common.prompt.PromptKey;
 import com.planty.dto.crop.*;
+import com.planty.dto.diary.DiaryListDto;
 import com.planty.entity.board.Board;
 import com.planty.entity.crop.Crop;
 import com.planty.entity.user.User;
 import com.planty.repository.crop.CropRepository;
+import com.planty.repository.diary.DiaryRepository;
 import com.planty.repository.user.UserRepository;
 import com.planty.storage.StorageService;
 import jakarta.transaction.Transactional;
@@ -19,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 
 
@@ -33,6 +36,7 @@ public class CropService {
     private final OpenAiService openAiService;
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
+    private final DiaryRepository diaryRepository;
 
     // 이미지와 작물 이름을 받아서 OpenAI API로 분석 요청 후 결과를 DTO로 변환하는 메소드
     public CropAnalysisResDto analyze(CropAnalysisDto formDto) {
@@ -195,6 +199,35 @@ public class CropService {
                 .map(CropHomeResDto::of)
                 .toList();
     }
+
+    // 작물의 상세 페이지
+    public CropDetailsResDto getCropDetails(Integer cropId, Integer meId) throws IOException {
+        // 1) 소유권 검증
+        Crop crop = requireOwnCrop(cropId, meId);
+
+        // 2) 작물 기본 정보
+        CropDetailsDto cropDetailsDto = CropDetailsDto.builder()
+                .cropId(cropId)
+                .name(crop.getName())
+                .cropImg(crop.getCropImg())
+                .startAt(crop.getStartAt())
+                .endAt(crop.getEndAt())
+                .build();
+
+        // 3) 해당 작물 재배일지 목록 (최신순) - 이미 @EntityGraph로 N+1 방지됨
+        List<DiaryListDto> diaryListDtos = diaryRepository
+                .findByCropIdOrderByCreatedAtDesc(cropId)
+                .stream()
+                .map(DiaryListDto::of) // or builder로 직접 매핑
+                .toList();
+
+        // 4) 최종 응답 조립 (필드명은 네 DTO에 맞춰)
+        return CropDetailsResDto.builder()
+                .crop(cropDetailsDto)
+                .diaries(diaryListDtos)
+                .build();
+    }
+
 
     // ─────────────────────────── 공통 유틸 ───────────────────────────
 

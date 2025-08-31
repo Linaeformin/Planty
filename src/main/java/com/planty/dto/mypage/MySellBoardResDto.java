@@ -7,6 +7,7 @@ import com.planty.entity.board.BoardImage;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -23,8 +24,8 @@ public class MySellBoardResDto {
     // 엔티티 -> DTO 반환
     public static MySellBoardResDto of(Board board) {
         // 현재 시간과 게시글이 등록된 시간으로 텍스트 반환
-        LocalDateTime dataTime = board.getCreatedAt();
-        String time = toTimeAgo(dataTime);
+        Instant dataTime = board.getCreatedAt();
+        String time = toTimeAgo(LocalDateTime.from(dataTime));
 
         // 썸네일 이미지 찾기
         String thumbnailUrl = board.getImages().stream()
