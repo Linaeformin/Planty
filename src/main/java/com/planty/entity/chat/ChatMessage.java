@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 // ChatMessage.java
@@ -33,6 +34,6 @@ public class ChatMessage {
     @Column(name = "is_read")
     private Boolean read;
     private String chatImg;
-    private LocalDateTime createdAt;
-    private LocalDateTime modifiedAt;
+    private Instant createdAt;
+    private Instant modifiedAt;
 }

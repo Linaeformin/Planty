@@ -3,6 +3,7 @@ package com.planty.entity.board;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,8 +27,8 @@ public class AiMessage {
     @Column(nullable = false)
     private String sender; // "user" or "ai"
 
-    private LocalDateTime createdAt;
-    private LocalDateTime modifiedAt;
+    private Instant createdAt;
+    private Instant modifiedAt;
 
     private String aiImage; // 선택적 이미지
 }

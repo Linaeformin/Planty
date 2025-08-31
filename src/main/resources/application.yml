@@ -21,6 +21,8 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 20MB
+  jackson:
+    time-zone: Asia/Seoul
 
 logging:
   level:
@@ -29,6 +31,12 @@ logging:
     org.hibernate.SQL: warn     # SQL 로그
     org.hibernate.type.descriptor.sql: trace   # 바인딩된 파라미터 값까지
 
+server:
+  error:
+    include-stacktrace: never       # trace 필드 제거
+    include-exception: false        # exception 필드 제거
+    include-message: never          # 기본 메시지도 숨김(디버깅 때만 on_param로)
+    include-binding-errors: never
 
 jwt:
   secret: "change-this-to-a-very-long-random-secret-at-least-256-bits"

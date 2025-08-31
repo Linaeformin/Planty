@@ -3,6 +3,8 @@ package com.planty.entity.board;
 import jakarta.persistence.*;
 import lombok.Getter; import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 
@@ -26,6 +28,6 @@ public class BoardImage {
     private Boolean thumbnail = false; // 대표 이미지 여부
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }
 

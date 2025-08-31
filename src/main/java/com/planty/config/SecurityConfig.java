@@ -3,6 +3,8 @@ package com.planty.config;
 import com.planty.config.jwt.JwtAuthenticationFilter;
 import com.planty.config.jwt.JwtProvider;
 import com.planty.service.user.UserService;
+import jakarta.servlet.DispatcherType;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -73,6 +75,13 @@ public class SecurityConfig {
 
                 // 권한 매핑
                 .authorizeHttpRequests(auth -> auth
+                        // 에러 접근 권한
+                        .requestMatchers("/error", "/favicon.ico").permitAll()
+                        .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
+
+                        // 정적 리소스 허용
+                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+
                         // CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 

@@ -12,6 +12,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,10 +54,10 @@ public class User {
     private List<Diary> diaries = new ArrayList<>();
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime modifiedAt;
+    private Instant modifiedAt;
 
     // 회원가입
     public static User createUser(SignupFormDto signupFormDto, PasswordEncoder passwordEncoder) {

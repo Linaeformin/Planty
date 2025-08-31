@@ -5,6 +5,7 @@ import com.planty.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,5 +29,5 @@ public class AiChat {
     @OneToMany(mappedBy = "aiChat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AiMessage> messages = new ArrayList<>();
 
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }
