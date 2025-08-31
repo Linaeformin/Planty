@@ -16,4 +16,5 @@ public class DiaryDetailsResDto {
     private String content;
     private String analysis;
     private List<DiaryImageDto> images;
+    private Boolean isOwner;
 }

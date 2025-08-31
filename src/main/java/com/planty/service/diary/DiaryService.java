@@ -128,7 +128,6 @@ public class DiaryService {
     }
 
     // 재배 일지 상세 조회
-    // TODO: isOwner key 추가
     public DiaryDetailsResDto getDiaryDetail(Integer userId, Integer cropId, Integer diaryId) {
 
         // 1) 다이어리 없으면 404
@@ -144,6 +143,9 @@ public class DiaryService {
                         .build())
                 .toList();
 
+        // 3) 소유자 판단
+        Boolean isOwner = diary.getUser() != null && diary.getUser().getId().equals(userId);
+
         // 3) 프론트 응답용 DTO에 데이터 넣기
         DiaryDetailsResDto dto = DiaryDetailsResDto.builder()
                 .diaryId(diary.getId())
@@ -151,6 +153,7 @@ public class DiaryService {
                 .content(diary.getContent())
                 .analysis(diary.getAnalysis())  // null이면 아예 빠짐 (@JsonInclude)
                 .images(imageDtos)
+                .isOwner(isOwner)
                 .build();
 
         // 반환
