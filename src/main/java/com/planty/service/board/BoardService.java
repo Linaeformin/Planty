@@ -198,7 +198,7 @@ public class BoardService {
         if (dto.getPrice() != null)   board.setPrice(dto.getPrice());
 
         // 4) 이미지 동기화
-        // 현재 이미지들
+        // 현재 이미지들 가져오기
         List<BoardImage> currentImages = board.getImages() != null ? board.getImages() : new ArrayList<>();
 
         // 유지할 목록 (null -> 빈 리스트)
