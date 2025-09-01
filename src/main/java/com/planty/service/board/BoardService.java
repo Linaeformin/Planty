@@ -1,6 +1,7 @@
 package com.planty.service.board;
 
 import com.planty.dto.board.*;
+import com.planty.dto.crop.CropDetailsDto;
 import com.planty.entity.board.Board;
 import com.planty.entity.board.BoardImage;
 import com.planty.entity.crop.Crop;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -129,6 +131,48 @@ public class BoardService {
                 .seller(sellerDto)
                 .board(boardDetailDto)
                 .isOwner(isOwner)
+                .build();
+    }
+
+    // 판매 게시글 수정 페이지 정보 반환
+    public BoardUpdateResDto getBoardUpdate(Integer id, Integer meId) {
+        // 판매 게시글 소유권 검증
+        Board board = requireOwnBoard(id, meId);
+
+        Crop crop = cropRepository.findById(board.getCrop().getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NOT_FOUND"));
+
+        // 판매 게시글 이미지 처리
+        List<String> images = Optional.ofNullable(board.getImages())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(BoardImage::getBoardImg)
+                .toList();
+
+        // 판매 게시글 정보
+        BoardDetailDto boardDetailDto = BoardDetailDto.builder()
+                .boardId(board.getId())
+                .cropId(board.getCrop().getId())
+                .title(board.getTitle())
+                .content(board.getContent())
+                .price(board.getPrice())
+                .sell(board.getSell())
+                .images(images)
+                .build();
+
+        // 판매 게시글 작물 불러오기
+        CropDetailsDto cropDetailsDto = CropDetailsDto.builder()
+                .cropId(crop.getId())
+                .name(crop.getName())
+                .cropImg(crop.getCropImg())
+                .startAt(crop.getStartAt())
+                .endAt(crop.getEndAt())
+                .build();
+
+        // 프론트에 보내주는 DTO 반환
+        return BoardUpdateResDto.builder()
+                .cropDetailsDto(cropDetailsDto)
+                .boardDetailDto(boardDetailDto)
                 .build();
     }
 
