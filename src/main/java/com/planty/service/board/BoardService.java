@@ -45,7 +45,7 @@ public class BoardService {
         // 수확 완료 작물 목록을 최신순으로 조회
         List<Crop> crops = cropRepository.findByUser_IdAndHarvestTrueOrderByCreatedAtDesc(userId);
 
-        // Crop 엔티티를 BoardSellCropsDto로 변환, 리스트로 반환
+        // Crop 엔티티를 BoardSellCropsDto로 변환
         return crops.stream()
                 .map(BoardSellCropsResDto::of)
                 .toList();
