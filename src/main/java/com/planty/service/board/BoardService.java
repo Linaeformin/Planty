@@ -115,7 +115,6 @@ public class BoardService {
         // 판매 게시글 정보
         BoardDetailDto boardDetailDto = BoardDetailDto.builder()
                 .boardId(board.getId())
-                .cropId(board.getCrop().getId())
                 .title(board.getTitle())
                 .content(board.getContent())
                 .price(board.getPrice())
@@ -152,7 +151,6 @@ public class BoardService {
         // 판매 게시글 정보
         BoardDetailDto boardDetailDto = BoardDetailDto.builder()
                 .boardId(board.getId())
-                .cropId(board.getCrop().getId())
                 .title(board.getTitle())
                 .content(board.getContent())
                 .price(board.getPrice())
