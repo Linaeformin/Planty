@@ -295,7 +295,7 @@ public class BoardService {
         // 대상 게시글 조회 및 소유자 검증
         Board board = requireOwnBoard(boardId, meId);
 
-        // 해당 게시글 삭제
+        // 해당 게시글 DB에서 삭제
         boardRepository.delete(board);
     }
 
