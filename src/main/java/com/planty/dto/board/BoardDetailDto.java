@@ -9,7 +9,6 @@ import java.util.List;
 @Getter @Builder
 public class BoardDetailDto {
     private Integer boardId;
-    private Integer cropId;
     private String title;
     private String content;
     private Integer price;

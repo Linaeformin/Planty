@@ -95,6 +95,24 @@ public class BoardController {
         return ResponseEntity.ok(dto);
     }
 
+    // 판매 게시글 수정 전 데이터
+    @GetMapping("/details/update/{id}")
+    public ResponseEntity<BoardUpdateResDto> getBoardUpdateDetail(
+            @AuthenticationPrincipal CustomUserDetails me,
+
+            // 게시글 id
+            @PathVariable Integer id
+    ) {
+        // 권한이 없을 떄
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // 판매 게시글 수정 데이터 가져오기
+        BoardUpdateResDto dto = boardService.getBoardUpdate(id, me.getId());
+
+        // 판매 게시글 데이터 반환
+        return ResponseEntity.ok(dto);
+    }
+
     // 판매 게시글 수정 (JSON + 파일)
     @PutMapping(value="/details/{id:\\d+}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateBoard(
