@@ -8,6 +8,8 @@ import lombok.Setter;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
 
@@ -25,8 +27,8 @@ public class BoardAllResDto {
     // 엔티티 -> DTO 반환
     public static BoardAllResDto of(Board board) {
         // 현재 시간과 게시글이 등록된 시간으로 텍스트 반환
-        Instant dataTime = board.getCreatedAt();
-        String time = toTimeAgo(LocalDateTime.from(dataTime));
+        Instant createdAt = board.getCreatedAt();
+        String time = toTimeAgo(createdAt);
 
         // 썸네일 이미지 찾기
         String thumbnailUrl = board.getImages().stream()
@@ -47,22 +49,30 @@ public class BoardAllResDto {
     }
 
     // 시간 계산
-    public static String toTimeAgo(LocalDateTime time) {
-        LocalDateTime now = LocalDateTime.now();
+    public static String toTimeAgo(Instant instant) {
+        // 모든 시간은 한국 시간 기준으로
+        ZoneId zone = ZoneId.of("Asia/Seoul");
 
-        long years = time.until(now, ChronoUnit.YEARS);
+        // 게시글이 생성된 시각을 zone 기준으로 변환
+        ZonedDateTime time = instant.atZone(zone);
+
+        // 현재 시각을 zone 기준으로 변환
+        ZonedDateTime now = ZonedDateTime.now(zone);
+
+        // 게시글 작성 시간과 현재 시간의 차이를 구하기
+        long years = ChronoUnit.YEARS.between(time, now);
         if (years > 0) return years + "년 전";
 
-        long months = time.until(now, ChronoUnit.MONTHS);
+        long months = ChronoUnit.MONTHS.between(time, now);
         if (months > 0) return months + "달 전";
 
-        long days = time.until(now, ChronoUnit.DAYS);
+        long days = ChronoUnit.DAYS.between(time, now);
         if (days > 0) return days + "일 전";
 
-        long hours = time.until(now, ChronoUnit.HOURS);
+        long hours = ChronoUnit.HOURS.between(time, now);
         if (hours > 0) return hours + "시간 전";
 
-        long minutes = time.until(now, ChronoUnit.MINUTES);
+        long minutes = ChronoUnit.MINUTES.between(time, now);
         if (minutes > 0) return minutes + "분 전";
 
         return "방금 전";
