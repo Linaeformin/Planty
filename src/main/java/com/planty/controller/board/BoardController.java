@@ -88,7 +88,7 @@ public class BoardController {
         // 권한이 없을 때
         if (me == null) return ResponseEntity.status(401).build();
 
-        // 판매 게시글 데이터 가져오기
+        // 판매 게시글 상세 데이터 가져오기
         BoardDetailResDto dto = boardService.getBoardDetail(id, me.getId());
 
         // 판매 게시글 데이터 반환
