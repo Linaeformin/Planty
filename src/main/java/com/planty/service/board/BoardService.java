@@ -340,7 +340,7 @@ public class BoardService {
                 .toList();
     }
 
-    // 검색어로 판매 게시글 검색
+    // 검색어로 판매 게시글 검색 (제목, 내용 기준)
     public List<BoardAllResDto> searchBoards(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return boardRepository.findAllByOrderByCreatedAtDesc()
