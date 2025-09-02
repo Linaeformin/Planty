@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.util.List;
 
 
-// 프론트 전달용 DTO
+// 판매 게시글 -> 재배 일지 프론트에게 전달하는 DTO
 @Getter @Setter
 @Builder
 public class BoardDiaryDetailResDto {
