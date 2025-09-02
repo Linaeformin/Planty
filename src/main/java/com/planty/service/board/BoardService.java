@@ -286,7 +286,7 @@ public class BoardService {
         // 판매 상태 변경
         board.setSell(sellStatus);
 
-        // 저장
+        // 변경 사항 저장
         boardRepository.save(board);
     }
 
