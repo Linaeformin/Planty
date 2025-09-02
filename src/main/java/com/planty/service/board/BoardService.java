@@ -1,6 +1,7 @@
 package com.planty.service.board;
 
 import com.planty.dto.board.*;
+import com.planty.dto.diary.DiaryDetailsResDto;
 import com.planty.dto.crop.CropDetailsDto;
 import com.planty.dto.diary.DiaryListDto;
 import com.planty.entity.board.Board;
@@ -368,7 +369,7 @@ public class BoardService {
     }
 
     // 판매 게시글의 재배 일지 상세 페이지
-    public BoardDiaryDetailResDto getSellDiaryDetail(Integer diaryId, Integer meId) {
+    public DiaryDetailsResDto getSellDiaryDetail(Integer diaryId, Integer meId) {
         // 대상 재배 일지 조회
         Diary diary = diaryRepository.findById(diaryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NOT_FOUND"));
@@ -388,12 +389,17 @@ public class BoardService {
                 .atZone(ZoneId.of("Asia/Seoul"))
                 .format(DateTimeFormatter.ofPattern("yyyy.MM.dd."));
 
+        // 소유자일 경우 분석 결과 삽입
+        String analysis = null;
+        if (isOwner) analysis = diary.getAnalysis();
+
         // 프론트에 보내주는 Dto 반환
-        return BoardDiaryDetailResDto.builder()
+        return DiaryDetailsResDto.builder()
                 .diaryId(diary.getId())
                 .title(diary.getTitle())
                 .content(diary.getContent())
                 .images(images)
+                .analysis(analysis)
                 .time(time)
                 .isOwner(isOwner)
                 .build();

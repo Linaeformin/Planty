@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -135,16 +137,18 @@ public class DiaryService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NOT_FOUND"));
 
         // 2) 다이어리 이미지를 리스트로
-        List<DiaryImageDto> imageDtos = diary.getImages() == null ? List.of()
+        List<String> imageDtos = diary.getImages() == null ? List.of()
                 : diary.getImages().stream()
-                .map(img -> DiaryImageDto.builder()
-                        .id(img.getId())
-                        .url(img.getDiaryImg())
-                        .build())
+                .map(img -> img.getDiaryImg()) // URL만 뽑기
                 .toList();
 
         // 3) 소유자 판단
         Boolean isOwner = diary.getUser() != null && diary.getUser().getId().equals(userId);
+
+        // 4) 등록 시간 반환
+        String time = diary.getCreatedAt()
+                .atZone(ZoneId.of("Asia/Seoul"))
+                .format(DateTimeFormatter.ofPattern("yyyy.MM.dd."));
 
         // 3) 프론트 응답용 DTO에 데이터 넣기
         DiaryDetailsResDto dto = DiaryDetailsResDto.builder()
@@ -153,6 +157,8 @@ public class DiaryService {
                 .content(diary.getContent())
                 .analysis(diary.getAnalysis())  // null이면 아예 빠짐 (@JsonInclude)
                 .images(imageDtos)
+                .time(time)
+                .isOwner(isOwner)
                 .isOwner(isOwner)
                 .build();
 
