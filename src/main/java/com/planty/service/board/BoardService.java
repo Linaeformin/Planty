@@ -2,6 +2,7 @@ package com.planty.service.board;
 
 import com.planty.dto.board.*;
 import com.planty.dto.crop.CropDetailsDto;
+import com.planty.dto.diary.DiaryListDto;
 import com.planty.entity.board.Board;
 import com.planty.entity.board.BoardImage;
 import com.planty.entity.crop.Crop;
@@ -352,7 +353,7 @@ public class BoardService {
     }
 
     // 판매 게시글의 재배 일지 목록
-    public List<BoardDiaryResDto> getSellDiary(Integer boardId) {
+    public List<DiaryListDto> getSellDiary(Integer boardId) {
 
         // 작물 아이디 가져오기
         Integer cropId = boardRepository.findCropIdByBoardId(boardId);
@@ -362,7 +363,7 @@ public class BoardService {
 
         // DTO로 변환
         return diaries.stream()
-                .map(BoardDiaryResDto::of)
+                .map(DiaryListDto::of)
                 .toList();
     }
 
