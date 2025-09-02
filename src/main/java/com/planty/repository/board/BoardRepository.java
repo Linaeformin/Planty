@@ -20,15 +20,25 @@ public interface BoardRepository extends JpaRepository<Board, Integer> {
     // 판매 게시글 전체 목록 가져오기
     List<Board> findAllByOrderByCreatedAtDesc();
 
-    // 제목으로 판매 게시글 검색하기 TODO: 카테고리를 없애면서 확인 필수
+    // 제목 매칭 우선 -> 내용 매칭 후 순위, 각 그룹 안에서는 최신순으로 반환
     @Query("""
         select distinct b
         from Board b
         left join fetch b.images i
-        where lower(b.title) like lower(:pattern)
-        order by b.createdAt desc
+        where (
+            lower(b.title) like lower(concat('%', :q, '%'))
+            or lower(cast(b.content as string)) like lower(concat('%', :q, '%'))
+        )
+        order by
+            case
+                when lower(b.title) like lower(concat('%', :q, '%')) then 0
+                else 1
+            end,
+            b.createdAt desc,
+            b.id desc
     """)
-    List<Board> searchByKeyword(@Param("pattern") String pattern);
+    List<Board> searchByKeyword(@Param("q") String q);
+
 
     // 게시글 기준으로 crop 아이디 가져오기
     @Query("select b.crop.id from Board b where b.id = :boardId")
